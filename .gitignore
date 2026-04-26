@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Trained models
+models/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Validation output
+validation/output/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(pip install:*)",
+      "Bash(python validation/test_env_load.py)",
+      "Bash(python validation/test_backtest_thresholds.py)",
+      "Bash(python -c ' *)",
+      "Bash(python -m py_compile feature_engine.py)",
+      "Bash(python -m py_compile trainer.py)",
+      "Bash(python -m py_compile validation/test_sector_relative.py)",
+      "Bash(python -m py_compile encoders.py)",
+      "Bash(python -m py_compile validation/test_sector_encoder.py)",
+      "Bash(python validation/test_sector_encoder.py)",
+      "Bash(python -m py_compile ranker_trainer.py)",
+      "Bash(python -m py_compile validation/test_ranker.py)",
+      "Bash(python validation/test_ranker.py)"
+    ]
+  }
+}
