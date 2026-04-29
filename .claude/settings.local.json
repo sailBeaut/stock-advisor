@@ -14,7 +14,11 @@
       "Bash(python validation/test_sector_encoder.py)",
       "Bash(python -m py_compile ranker_trainer.py)",
       "Bash(python -m py_compile validation/test_ranker.py)",
-      "Bash(python validation/test_ranker.py)"
+      "Bash(python validation/test_ranker.py)",
+      "Bash(sqlite3 trading.db \"PRAGMA table_info\\(labels\\);\")",
+      "Bash(sqlite3 trading.db \"PRAGMA table_info\\(features\\);\")",
+      "Bash(awk '{print $9, \"\\(\" $5 \"\\)\"}')",
+      "Bash(python validation/diagnose_prompts_1_to_6.py)"
     ]
   }
 }

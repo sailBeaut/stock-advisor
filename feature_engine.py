@@ -719,25 +719,7 @@ def _ensure_schema() -> None:
         _SECTOR_ENCODER.classes_[-1],
     )
 
-    with database.connection() as conn:
-        # ---- point-in-time fundamentals guard --------------------------------
-        # Raise early if someone accidentally adds a fundamental column to
-        # FEATURE_COLS in trainer.py (those values are not historical).
-        from trainer import FEATURE_COLS as _TRAINER_FEATURE_COLS
-        fund_cols = {
-            row[1]
-            for row in conn.execute("PRAGMA table_info(fundamental_metadata)")
-        }
-        _structural = {"ticker", "fetch_date", "is_point_in_time"}
-        fund_cols -= _structural
-        for col in _TRAINER_FEATURE_COLS:
-            if col in fund_cols:
-                raise RuntimeError(
-                    f"BIAS GUARD: fundamental column '{col}' found in FEATURE_COLS. "
-                    "Remove it — yfinance fundamentals are not point-in-time and "
-                    "will introduce look-ahead bias into the model."
-                )
-        # ----------------------------------------------------------------------
+    # bias guard for fundamental cols lives in trainer.load_data()
 
 
 def _run_parallel(
@@ -751,29 +733,12 @@ def _run_parallel(
     ok = fail = 0
     total = len(tickers)
 
-    # ── Pre-compute market-cap quintile tier for every ticker ──────────────
-    # Uses the current market_cap stored in stocks (set during data_collector
-    # run).  This is not strictly point-in-time but market-cap tier is stable
-    # enough to serve as a categorical "size" feature.
-    # Quintile 1 = smallest 20%, 5 = largest 20%, 3 = median fallback for
-    # tickers with no recorded market cap.
-    with database.connection() as conn:
-        mc_rows = conn.execute(
-            "SELECT ticker, market_cap FROM stocks WHERE market_cap IS NOT NULL"
-        ).fetchall()
-    if mc_rows:
-        mc_df = pd.DataFrame([dict(r) for r in mc_rows])
-        mc_df["mcap_tier"] = pd.qcut(
-            mc_df["market_cap"], 5, labels=[1, 2, 3, 4, 5], duplicates="drop"
-        ).astype(int)
-        mcap_tier_map: dict[str, int] = dict(zip(mc_df["ticker"], mc_df["mcap_tier"]))
-    else:
-        mcap_tier_map = {}
-    log.info(
-        "Market-cap tiers computed for %d tickers (median=3 used as fallback).",
-        len(mcap_tier_map),
-    )
-    # ───────────────────────────────────────────────────────────────────────
+    # mcap_tier removed Apr 2026 due to look-ahead bias.
+    # Re-add only with point-in-time market cap from
+    # price * shares-outstanding-at-date. Until then, every row gets
+    # the neutral median tier so XGBoost ignores it (and trainer/
+    # ranker no longer load this column anyway).
+    mcap_tier_map: dict[str, int] = {}
 
     with ProcessPoolExecutor(max_workers=workers) as pool:
         futures = {

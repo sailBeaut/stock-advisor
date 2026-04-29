@@ -59,8 +59,24 @@ def verify_saved_model(path: str | Path | None = None) -> bool:
         )
         return False
 
+    feature_cols = payload.get("feature_cols")
+    if not isinstance(feature_cols, list) or len(feature_cols) == 0:
+        log.warning(
+            "verify_saved_model: 'feature_cols' missing or empty in %s — retraining required.",
+            load_path,
+        )
+        return False
+
+    if payload.get("model") is None:
+        log.warning(
+            "verify_saved_model: 'model' key is None in %s — retraining required.",
+            load_path,
+        )
+        return False
+
     log.info(
-        "verify_saved_model: model at %s is valid (feature_bounds present for %d features).",
+        "verify_saved_model: model at %s is valid "
+        "(feature_bounds present for %d features, model loaded).",
         load_path,
         len(payload["feature_bounds"]),
     )

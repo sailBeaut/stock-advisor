@@ -70,10 +70,21 @@ def run_pipeline(skip_fetch: bool = False, retrain: bool = False) -> None:
     print(f"  skip-fetch={skip_fetch}  retrain={retrain}")
     print("=" * 68)
 
+    # ── Step 0: fundamentals safety audit (abort on failure) ────────────────
+    import data_collector
+    _audit = _run_step(
+        "0. Fundamentals safety audit",
+        data_collector.audit_fundamentals_safety,
+    )
+    results.append(_audit)
+    if not _audit.passed:
+        print("\n  ABORT: fundamentals safety audit FAILED — pipeline halted.")
+        print("  Fix the schema overlap before running the pipeline.\n")
+        return
+
     # ── Steps 1–3: data fetch (skippable) ───────────────────────────────────
 
     if not skip_fetch:
-        import data_collector
         results.append(_run_step(
             "1. Price update (incremental)",
             data_collector.run_incremental_update,

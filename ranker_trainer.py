@@ -72,7 +72,6 @@ FEATURE_COLS: list[str] = [
     "golden_cross",
     # Sector / size
     "sector_encoded",
-    "mcap_tier",
     # Macro
     "fed_funds_rate",
     "treasury_10y",

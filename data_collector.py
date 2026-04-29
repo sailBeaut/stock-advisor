@@ -484,6 +484,10 @@ def audit_fundamentals_safety() -> None:
         print("  These columns must NOT appear in FEATURE_COLS:")
         for col in sorted(overlap):
             print(f"    - {col}")
+        raise RuntimeError(
+            f"audit_fundamentals_safety FAILED: fundamental columns overlap "
+            f"with features table: {sorted(overlap)}"
+        )
     else:
         print()
         print("  PASS: no fundamental columns found in features table.")

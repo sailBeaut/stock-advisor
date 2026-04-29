@@ -73,7 +73,6 @@ FEATURE_COLS: list[str] = [
     "golden_cross",       # 1 if sma50 > sma200 else 0
     # Sector / size context
     "sector_encoded",     # integer-encoded GICS sector (stable cross-stock anchor)
-    "mcap_tier",          # market-cap quintile 1(small)–5(large); stable size proxy
     # Macro / market-regime features (same value for every ticker on a given date)
     "fed_funds_rate",     # FRED FEDFUNDS — current rate environment
     "treasury_10y",       # FRED GS10 — long-end rate
@@ -296,6 +295,9 @@ class UniversalStockModel:
     ) -> np.ndarray:
         """
         Apply a per-class threshold for BUY.
+
+        # buy_threshold path is unused at inference; kept for offline analysis only.
+        # Inference uses _apply_buy_percentile via predict() and predict_proba().
         If P(BUY) >= threshold → predict BUY.
         Otherwise → argmax of (SELL, HOLD) probabilities for the other two.
 
@@ -414,6 +416,9 @@ class UniversalStockModel:
     ) -> dict[int, float]:
         """
         Grid-search BUY probability thresholds on the VALIDATION set.
+
+        # buy_threshold path is unused at inference; kept for offline analysis only.
+        # Inference uses _apply_buy_percentile via predict() and predict_proba().
 
         Returns a dict {regime_value: threshold} with separate thresholds
         for each market regime (sp500_above_sma50: 0=bear, 1=bull).
