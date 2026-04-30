@@ -53,6 +53,7 @@ def initialize(path: str | Path = DB_PATH) -> None:
         _create_ticker_cik(conn)
         _create_edgar_filings(conn)
         _create_earnings_events(conn)
+        _create_feature_violations(conn)
 
 
 def _create_stocks(conn: sqlite3.Connection) -> None:
@@ -307,6 +308,26 @@ def _create_signals(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_signals_signal_date
             ON signals (signal, date DESC);
+    """)
+
+
+def _create_feature_violations(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS feature_violations (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker      TEXT    NOT NULL,
+            date        TEXT    NOT NULL,
+            feature     TEXT    NOT NULL,
+            raw_value   REAL    NOT NULL,
+            clipped_to  REAL    NOT NULL,
+            run_at      TEXT    NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_fviol_ticker_date
+            ON feature_violations (ticker, date);
+
+        CREATE INDEX IF NOT EXISTS idx_fviol_run_at
+            ON feature_violations (run_at DESC);
     """)
 
 

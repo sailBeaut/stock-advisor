@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 
 import database
+from prediction_guard import validate_feature_ranges
 
 log = logging.getLogger(__name__)
 
@@ -432,14 +433,14 @@ class PortfolioBacktest:
                         day,
                     )
                 else:
-                    # Optional: prediction_guard range validation
-                    try:
-                        from prediction_guard import validate_feature_ranges  # type: ignore[import]
-                        validate_feature_ranges(df_t, self.model.feature_bounds)
-                    except (ImportError, AttributeError):
-                        log.debug(
-                            "prediction_guard.validate_feature_ranges not available; skipping"
-                        )
+                    # Clip features to training-time bounds before scoring
+                    if self.model.feature_bounds:
+                        df_t, _bviol = validate_feature_ranges(df_t, self.model.feature_bounds)
+                        if _bviol:
+                            log.debug(
+                                "Rebalance date %s: %d feature violations clipped",
+                                day, len(_bviol),
+                            )
 
                     # Score, sort, select
                     ranked = self._score_and_select(df_t)

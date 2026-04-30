@@ -2,7 +2,10 @@
 predict.py
 
 Inference script — fetches today's data, computes features, and outputs
-ranked BUY signals from the trained UniversalStockModel.
+ranked BUY signals from the model designated in models/production_config.json.
+
+The active model is controlled by production_config.json ('ranker' or
+'classifier').  Change the JSON to switch candidates; no code edits needed.
 
 Usage
 -----
@@ -12,16 +15,19 @@ Usage
 """
 
 import argparse
+import datetime
 import json
 import logging
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 import database
 import prediction_guard
-from trainer import FEATURE_COLS, LABEL_BUY, LABEL_HOLD, LABEL_SELL, UniversalStockModel
+from production_config import load_production_model
+from trainer import FEATURE_COLS, LABEL_BUY, LABEL_HOLD, LABEL_SELL
 
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -32,6 +38,8 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 LABEL_NAMES = {LABEL_SELL: "SELL", LABEL_HOLD: "HOLD", LABEL_BUY: "BUY"}
+
+_CFG_PATH = Path(__file__).parent / "models" / "production_config.json"
 
 # ---------------------------------------------------------------------------
 # Data update helpers
@@ -104,6 +112,24 @@ def _load_latest_features() -> pd.DataFrame:
         len(df), df["date"].iloc[0],
     )
     return df
+
+
+# ---------------------------------------------------------------------------
+# Feature violations persistence
+# ---------------------------------------------------------------------------
+
+_VIOLATIONS_INSERT = """
+INSERT INTO feature_violations (ticker, date, feature, raw_value, clipped_to, run_at)
+VALUES (:ticker, :date, :feature, :raw_value, :clipped_to, :run_at)
+"""
+
+
+def _persist_violations(violations: list[dict]) -> None:
+    run_at  = datetime.datetime.utcnow().isoformat(timespec="seconds")
+    records = [{**v, "run_at": run_at} for v in violations]
+    with database.connection() as conn:
+        conn.executemany(_VIOLATIONS_INSERT, records)
+    log.info("Persisted %d feature violations to DB.", len(records))
 
 
 # ---------------------------------------------------------------------------
@@ -240,37 +266,87 @@ def run(skip_update: bool = False, save_signals: bool = True) -> None:
     skip_update  : if True, skip the data-fetch step and predict from DB
     save_signals : if True, upsert predictions into the signals table
     """
-    # ---- 1. Verify model integrity -----------------------------------------
-    if not prediction_guard.verify_saved_model():
+    # ---- 0. Determine candidate model and its on-disk path ----------------
+    _candidate = "classifier"
+    if _CFG_PATH.exists():
+        _candidate = json.loads(_CFG_PATH.read_text()).get("candidate_model", "classifier")
+
+    if _candidate == "ranker":
+        from ranker_trainer import RANKER_PATH as _model_path
+    else:
+        from trainer import MODEL_PATH as _model_path
+
+    # ---- 1. Verify model integrity ----------------------------------------
+    if not prediction_guard.verify_saved_model(_model_path):
         log.error(
             "Model failed integrity check — feature_bounds missing. "
             "Run: python trainer.py    to retrain and resave."
         )
         sys.exit(1)
 
-    # ---- 2. Load model -----------------------------------------------------
-    model = UniversalStockModel.load()
+    # ---- 2. Load model ----------------------------------------------------
+    model, model_type = load_production_model()
+    log.info("Candidate model: %s", model_type)
 
-    # ---- 3. Fetch latest data ----------------------------------------------
+    # ---- 3. Fetch latest data ---------------------------------------------
     if not skip_update:
         _update_data()
     else:
         log.info("--skip-update: using existing data in DB.")
 
-    # ---- 4. Load today's feature rows --------------------------------------
+    # ---- 4. Load today's feature rows -------------------------------------
     df = _load_latest_features()
     if df.empty:
         log.error("No feature rows found in DB — run feature_engine.py first.")
         sys.exit(1)
 
-    # ---- 5. Predict (single inference pass) -----------------------------------
-    proba = model.predict_proba(df)            # (n, 3) — SELL / HOLD / BUY columns
-    preds = UniversalStockModel._apply_buy_percentile(proba, model.buy_top_fraction)
+    # ---- 5. Validate feature bounds (clip + record violations) ------------
+    if model.feature_bounds:
+        df, violations = prediction_guard.validate_feature_ranges(df, model.feature_bounds)
+        if violations:
+            log.warning("FEATURE BOUNDS: %d violations clipped", len(violations))
+            for v in violations[:10]:
+                log.warning(
+                    "  %s  %s  %s: raw=%.4f  clipped_to=%.4f",
+                    v["ticker"], v["date"], v["feature"],
+                    v["raw_value"], v["clipped_to"],
+                )
+            _persist_violations(violations)
+            n_cells = len(df) * len(model.feature_bounds)
+            if len(violations) > 0.05 * n_cells:
+                log.error(
+                    "FEATURE BOUNDS: %.1f%% of cells violated (>5%%) — "
+                    "data may be corrupted. Aborting.",
+                    100.0 * len(violations) / n_cells,
+                )
+                sys.exit(1)
 
-    # ---- 6–8. Display results ----------------------------------------------
+    # ---- 6. Predict -------------------------------------------------------
+    if model_type == "ranker":
+        # Ranker returns relevance scores; top-20 by score → BUY, rest → HOLD
+        scores     = model.predict(df)                      # (n,) float
+        top_n      = 20
+        order      = np.argsort(scores)[::-1]
+        preds      = np.full(len(df), LABEL_HOLD, dtype=int)
+        preds[order[:top_n]] = LABEL_BUY
+        score_range = scores.max() - scores.min()
+        scores_norm = (scores - scores.min()) / (score_range + 1e-9)
+        # Pseudo-probability matrix so display/save functions work unchanged:
+        # SELL=0, HOLD=1−score_norm, BUY=score_norm
+        proba = np.stack([
+            np.zeros(len(df)),
+            1.0 - scores_norm,
+            scores_norm,
+        ], axis=1)
+    else:
+        from trainer import UniversalStockModel
+        proba = model.predict_proba(df)
+        preds = UniversalStockModel._apply_buy_percentile(proba, model.buy_top_fraction)
+
+    # ---- 7. Display results -----------------------------------------------
     _print_signals(df, proba, preds)
 
-    # ---- 9. Persist --------------------------------------------------------
+    # ---- 8. Persist -------------------------------------------------------
     if save_signals:
         _save_signals(df, proba, preds)
 
