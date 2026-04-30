@@ -54,6 +54,7 @@ def initialize(path: str | Path = DB_PATH) -> None:
         _create_edgar_filings(conn)
         _create_earnings_events(conn)
         _create_feature_violations(conn)
+        _create_recommendations(conn)
 
 
 def _create_stocks(conn: sqlite3.Connection) -> None:
@@ -308,6 +309,24 @@ def _create_signals(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_signals_signal_date
             ON signals (signal, date DESC);
+    """)
+
+
+def _create_recommendations(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS recommendations (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            as_of_date   TEXT    NOT NULL,
+            payload_json TEXT    NOT NULL,
+            executed     INTEGER NOT NULL DEFAULT 0,
+            executed_at  TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_rec_date
+            ON recommendations (as_of_date);
+
+        CREATE INDEX IF NOT EXISTS idx_rec_executed
+            ON recommendations (executed, as_of_date DESC);
     """)
 
 
