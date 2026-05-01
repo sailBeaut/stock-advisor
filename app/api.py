@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -12,6 +13,7 @@ from pydantic import BaseModel
 
 import advisor
 import database
+import paper_trading
 
 app = FastAPI(title="Stock Advisor", version="0.1.0")
 
@@ -86,6 +88,14 @@ def portfolio_history():
             **payload,
         })
     return result
+
+
+@app.get("/paper/performance")
+def paper_performance(start_date: Optional[str] = None):
+    try:
+        return paper_trading.forward_performance_report(start_date=start_date)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/model/info")

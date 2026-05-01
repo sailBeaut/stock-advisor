@@ -151,6 +151,18 @@ def run_pipeline(skip_fetch: bool = False, retrain: bool = False) -> None:
         lambda: predict.run(skip_update=True, save_signals=True),
     ))
 
+    # ── Step 9: paper trading ────────────────────────────────────────────────
+    import paper_trading
+
+    def _paper_step():
+        paper_trading.record_today()
+        paper_trading.mark_to_market_today()
+
+    results.append(_run_step(
+        "9. Paper trading (record + mark-to-market)",
+        _paper_step,
+    ))
+
     # ── Summary ──────────────────────────────────────────────────────────────
     total_elapsed = time.perf_counter() - pipeline_start
     n_pass = sum(r.passed for r in results)

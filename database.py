@@ -55,6 +55,8 @@ def initialize(path: str | Path = DB_PATH) -> None:
         _create_earnings_events(conn)
         _create_feature_violations(conn)
         _create_recommendations(conn)
+        _create_paper_portfolio(conn)
+        _create_paper_nav(conn)
 
 
 def _create_stocks(conn: sqlite3.Connection) -> None:
@@ -347,6 +349,36 @@ def _create_feature_violations(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_fviol_run_at
             ON feature_violations (run_at DESC);
+    """)
+
+
+def _create_paper_portfolio(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS paper_portfolio (
+            as_of_date    TEXT NOT NULL,
+            ticker        TEXT NOT NULL,
+            target_shares REAL NOT NULL,
+            target_weight REAL NOT NULL,
+            entry_price   REAL NOT NULL,
+            PRIMARY KEY (as_of_date, ticker)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_pp_date
+            ON paper_portfolio (as_of_date DESC);
+    """)
+
+
+def _create_paper_nav(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS paper_nav (
+            date       TEXT PRIMARY KEY,
+            nav_usd    REAL NOT NULL,
+            spy_close  REAL NOT NULL,
+            n_holdings INTEGER NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_pnav_date
+            ON paper_nav (date ASC);
     """)
 
 
