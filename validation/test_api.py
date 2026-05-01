@@ -54,10 +54,10 @@ def test_portfolio_history():
 
 
 TESTS = [
-    ("GET /health → 200 + status='ok'", test_health),
-    ("GET /signals/latest → 200 + list", test_signals_latest),
-    ("POST /recommend {AAPL:10, cash:5000} → 200 + 'trades' key", test_recommend),
-    ("GET /portfolio/history → 200 + list", test_portfolio_history),
+    ("GET /health -> 200 + status='ok'", test_health),
+    ("GET /signals/latest -> 200 + list", test_signals_latest),
+    ("POST /recommend {AAPL:10, cash:5000} -> 200 + 'trades' key", test_recommend),
+    ("GET /portfolio/history -> 200 + list", test_portfolio_history),
 ]
 
 
