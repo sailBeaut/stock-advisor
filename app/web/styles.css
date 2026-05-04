@@ -1,0 +1,678 @@
+/* ============================================================
+   Design System
+   ============================================================ */
+:root {
+  --bg-primary: #0F1419;
+  --bg-card:    #1F2937;
+  --bg-elev:    #2A3441;
+  --text-prim:  #F3F4F6;
+  --text-sec:   #9CA3AF;
+  --accent:     #3B82F6;
+  --green:      #10B981;
+  --red:        #EF4444;
+  --amber:      #F59E0B;
+  --border:     #374151;
+  --tap-target: 44px;
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --radius-card: 14px;
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--bg-primary);
+}
+
+body {
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.47;
+  color: var(--text-prim);
+  background: var(--bg-primary);
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(70px + env(safe-area-inset-bottom));
+}
+
+button { font-family: var(--font); cursor: pointer; border: none; background: none; }
+input  { font-family: var(--font); font-size: 17px; }
+a      { color: var(--accent); text-decoration: none; }
+
+/* ============================================================
+   Top App Bar
+   ============================================================ */
+.app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: calc(56px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  padding-left: 20px;
+  padding-right: 12px;
+  padding-bottom: 10px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.app-bar-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-target);
+  min-height: var(--tap-target);
+  border-radius: 50%;
+  color: var(--accent);
+  background: transparent;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.icon-btn:active { background: rgba(59, 130, 246, 0.15); }
+
+/* ============================================================
+   Main Scroll Area
+   ============================================================ */
+#main-content {
+  margin-top: calc(56px + env(safe-area-inset-top));
+  min-height: calc(100dvh - 56px - env(safe-area-inset-top));
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   Tab Sections
+   ============================================================ */
+.tab-section {
+  padding: 16px 16px 32px;
+  min-height: 100%;
+}
+
+/* ============================================================
+   Bottom Tab Bar
+   ============================================================ */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  height: calc(70px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-sec);
+  min-height: var(--tap-target);
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.tab-btn.active { color: var(--accent); }
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.tab-icon svg { display: block; }
+
+/* ============================================================
+   Cards
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card-tappable {
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.card-tappable:active { background: var(--bg-elev); }
+
+/* ============================================================
+   Hero / Portfolio Value
+   ============================================================ */
+.hero-value {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-sec);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Numbers
+   ============================================================ */
+.num { font-variant-numeric: tabular-nums; }
+
+.price-up   { color: var(--green); }
+.price-down { color: var(--red); }
+
+/* ============================================================
+   Badges
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+
+.badge-buy  { background: var(--green); }
+.badge-hold { background: var(--amber); }
+.badge-sell { background: var(--red); }
+
+/* ============================================================
+   Skeleton Loader
+   ============================================================ */
+.skeleton-block, .skeleton {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-elev) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  border-radius: var(--radius-card);
+}
+
+@keyframes skeleton-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   Sparkline
+   ============================================================ */
+.sparkline {
+  display: inline-block;
+  height: 24px;
+  width: 60px;
+  vertical-align: middle;
+}
+.sparkline path { fill: none; stroke-width: 1.5px; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ============================================================
+   Overlay (API key + cold-start)
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 25, 0.96);
+  padding: 24px;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.overlay[hidden] { display: none; }
+
+.overlay-card {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overlay-card h2 { font-size: 22px; font-weight: 700; }
+.overlay-card p  { color: var(--text-sec); font-size: 15px; }
+.overlay-title   { font-size: 18px; font-weight: 600; color: var(--text-prim); }
+.overlay-sub     { font-size: 14px; color: var(--text-sec); }
+
+/* ============================================================
+   Spinner
+   ============================================================ */
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   Forms & Inputs
+   ============================================================ */
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--text-sec);
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"] {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-prim);
+  padding: 12px 14px;
+  min-height: var(--tap-target);
+  outline: none;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  -webkit-appearance: none;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-target);
+  background: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 0 20px;
+  width: 100%;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:active { opacity: 0.8; }
+
+.btn-large { min-height: 52px; font-size: 18px; border-radius: 14px; }
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-target);
+  background: var(--bg-elev);
+  color: var(--text-prim);
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================
+   FAB (Floating Action Button)
+   ============================================================ */
+.fab {
+  position: fixed;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  z-index: 90;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s;
+}
+.fab:active { transform: scale(0.93); }
+
+/* ============================================================
+   Sheets (bottom sheets)
+   ============================================================ */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sheet-backdrop.visible { opacity: 1; }
+.sheet-backdrop[hidden] { display: none; }
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  max-height: 75dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  padding-bottom: env(safe-area-inset-bottom);
+  will-change: transform;
+}
+
+.sheet-tall { max-height: 88dvh; }
+
+.sheet.open { transform: translateY(0); }
+.sheet[hidden] { display: none; }
+/* When transitioning in, remove hidden but sheet starts translated */
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 4px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 1;
+}
+
+.sheet-header h3 { font-size: 18px; font-weight: 700; }
+
+.sheet-ticker-label {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-right: 10px;
+}
+
+.sheet-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ============================================================
+   Filter Row (Picks)
+   ============================================================ */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+
+.filter-btn {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 500;
+  background: var(--bg-card);
+  color: var(--text-sec);
+  border: 1px solid var(--border);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.filter-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ============================================================
+   Signal/Stock Row
+   ============================================================ */
+.stock-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap-target);
+}
+
+.stock-row-left  { flex: 1; min-width: 0; }
+.stock-row-right { flex-shrink: 0; text-align: right; }
+
+.ticker-label { font-size: 17px; font-weight: 700; }
+.company-name { font-size: 13px; color: var(--text-sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ============================================================
+   Contribution Bars (stock detail "Why" section)
+   ============================================================ */
+.contrib-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contrib-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.contrib-label { flex: 0 0 120px; color: var(--text-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.contrib-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-elev);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.contrib-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.contrib-val { flex: 0 0 48px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Trade Rows (Rebalance)
+   ============================================================ */
+.trade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--tap-target);
+  gap: 8px;
+}
+
+.trade-action-buy  { color: var(--green); font-weight: 700; }
+.trade-action-sell { color: var(--red); font-weight: 700; }
+
+/* ============================================================
+   Swipe-to-delete
+   ============================================================ */
+.swipeable {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--red);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  transform: translateX(100%);
+  transition: transform 0.2s;
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 64px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 400;
+  background: var(--bg-elev);
+  color: var(--text-prim);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   Pull-to-refresh indicator
+   ============================================================ */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  color: var(--text-sec);
+  font-size: 14px;
+  gap: 8px;
+  overflow: hidden;
+  transition: height 0.2s;
+}
+
+.ptr-indicator.hidden { height: 0; }
+
+/* ============================================================
+   Rebalance intro
+   ============================================================ */
+.rebalance-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 0 24px;
+  color: var(--text-sec);
+}
+
+/* ============================================================
+   Section headings
+   ============================================================ */
+.section-heading {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-sec);
+  margin: 20px 0 10px;
+}
+
+/* ============================================================
+   Dashboard stat chips
+   ============================================================ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-chip {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 14px 14px;
+}
+
+.stat-chip-label { font-size: 12px; color: var(--text-sec); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.3px; }
+.stat-chip-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Misc utilities
+   ============================================================ */
+.text-sec  { color: var(--text-sec); }
+.text-sm   { font-size: 15px; }
+.text-xs   { font-size: 13px; }
+.mt-4      { margin-top: 4px; }
+.mt-8      { margin-top: 8px; }
+.mt-12     { margin-top: 12px; }
+.flex-row  { display: flex; align-items: center; gap: 8px; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.bold      { font-weight: 700; }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-sec);
+}
+.empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p    { font-size: 15px; }

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0F1419">
+  <title>Stock Advisor</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- API Key Overlay -->
+  <div id="api-key-overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <h2>Welcome to Stock Advisor</h2>
+      <p>Enter your API key to continue. It will be saved locally.</p>
+      <input id="api-key-input" type="password" placeholder="Enter API key" autocomplete="off">
+      <button id="api-key-save" class="btn-primary">Save &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- Cold-start overlay -->
+  <div id="coldstart-overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="spinner"></div>
+      <p class="overlay-title">Waking up the model&hellip;</p>
+      <p class="overlay-sub">(This takes ~30s on first open of the day)</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- Top App Bar -->
+  <header id="app-bar" class="app-bar">
+    <span id="app-bar-title" class="app-bar-title">Dashboard</span>
+    <button id="refresh-btn" class="icon-btn" aria-label="Refresh">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content">
+
+    <!-- Dashboard Section -->
+    <section id="section-dashboard" class="tab-section active" role="tabpanel" aria-label="Dashboard">
+      <div id="dashboard-content">
+        <div class="skeleton-block" style="height:120px;margin-bottom:16px"></div>
+        <div class="skeleton-block" style="height:72px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:72px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:72px"></div>
+      </div>
+    </section>
+
+    <!-- Picks Section -->
+    <section id="section-picks" class="tab-section" role="tabpanel" aria-label="Picks" hidden>
+      <div class="filter-row">
+        <button class="filter-btn active" data-signal="BUY">Buy</button>
+        <button class="filter-btn" data-signal="HOLD">Hold</button>
+        <button class="filter-btn" data-signal="SELL">Sell</button>
+        <button class="filter-btn" data-signal="ALL">All</button>
+      </div>
+      <div id="picks-content">
+        <div class="skeleton-block" style="height:80px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:80px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:80px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:80px"></div>
+      </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="section-portfolio" class="tab-section" role="tabpanel" aria-label="Portfolio" hidden>
+      <div id="portfolio-content">
+        <div class="skeleton-block" style="height:100px;margin-bottom:16px"></div>
+        <div class="skeleton-block" style="height:72px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:72px;margin-bottom:12px"></div>
+        <div class="skeleton-block" style="height:72px"></div>
+      </div>
+      <button id="add-holding-btn" class="fab" aria-label="Add holding">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </section>
+
+    <!-- Rebalance Section -->
+    <section id="section-rebalance" class="tab-section" role="tabpanel" aria-label="Rebalance" hidden>
+      <div class="rebalance-intro">
+        <p>Generate ML-driven trade recommendations to rebalance your portfolio.</p>
+        <button id="generate-trades-btn" class="btn-primary btn-large">Generate Trades</button>
+      </div>
+      <div id="rebalance-content"></div>
+    </section>
+
+  </main>
+
+  <!-- Add Holding Sheet -->
+  <div id="add-holding-sheet" class="sheet" aria-modal="true" role="dialog" aria-label="Add Holding" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3>Add Holding</h3>
+      <button class="sheet-close icon-btn" data-sheet="add-holding-sheet" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <form id="add-holding-form" class="sheet-body">
+      <label class="form-label">Ticker Symbol
+        <input id="holding-ticker" type="text" placeholder="AAPL" maxlength="8" style="text-transform:uppercase">
+      </label>
+      <label class="form-label">Shares
+        <input id="holding-shares" type="number" placeholder="10" step="0.001" min="0">
+      </label>
+      <label class="form-label">Average Cost per Share
+        <input id="holding-cost" type="number" placeholder="150.00" step="0.01" min="0">
+      </label>
+      <button type="submit" class="btn-primary">Add to Portfolio</button>
+    </form>
+  </div>
+
+  <!-- Edit Cash Sheet -->
+  <div id="edit-cash-sheet" class="sheet" aria-modal="true" role="dialog" aria-label="Edit Cash" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3>Edit Cash Balance</h3>
+      <button class="sheet-close icon-btn" data-sheet="edit-cash-sheet" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <form id="edit-cash-form" class="sheet-body">
+      <label class="form-label">Cash Balance
+        <input id="cash-amount" type="number" placeholder="5000.00" step="0.01" min="0">
+      </label>
+      <button type="submit" class="btn-primary">Update Cash</button>
+    </form>
+  </div>
+
+  <!-- Stock Detail Sheet -->
+  <div id="stock-sheet" class="sheet sheet-tall" aria-modal="true" role="dialog" aria-label="Stock Detail" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span id="sheet-ticker" class="sheet-ticker-label"></span>
+        <span id="sheet-badge" class="badge"></span>
+      </div>
+      <button class="sheet-close icon-btn" data-sheet="stock-sheet" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="stock-sheet-body">
+      <div class="skeleton-block" style="height:48px;margin-bottom:16px"></div>
+      <div class="skeleton-block" style="height:140px;margin-bottom:16px"></div>
+      <div class="skeleton-block" style="height:80px"></div>
+    </div>
+  </div>
+
+  <!-- Sheet Backdrop -->
+  <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+
+  <!-- Bottom Tab Bar -->
+  <nav id="tab-bar" class="tab-bar" role="tablist" aria-label="Main navigation">
+    <button class="tab-btn active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="section-dashboard">
+      <span class="tab-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+      </span>
+      <span class="tab-label">Dashboard</span>
+    </button>
+    <button class="tab-btn" data-tab="picks" role="tab" aria-selected="false" aria-controls="section-picks">
+      <span class="tab-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+      </span>
+      <span class="tab-label">Picks</span>
+    </button>
+    <button class="tab-btn" data-tab="portfolio" role="tab" aria-selected="false" aria-controls="section-portfolio">
+      <span class="tab-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+          <line x1="12" y1="12" x2="12" y2="16"></line>
+          <line x1="10" y1="14" x2="14" y2="14"></line>
+        </svg>
+      </span>
+      <span class="tab-label">Portfolio</span>
+    </button>
+    <button class="tab-btn" data-tab="rebalance" role="tab" aria-selected="false" aria-controls="section-rebalance">
+      <span class="tab-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+          <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+          <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+          <circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+        </svg>
+      </span>
+      <span class="tab-label">Rebalance</span>
+    </button>
+  </nav>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
