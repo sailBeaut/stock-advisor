@@ -2,7 +2,8 @@ name: Wake Render
 
 on:
   schedule:
-    - cron: '*/14 13-22 * * 1-5'   # Mon-Fri 13:00-22:00 UTC = 9am-6pm ET
+    - cron: '*/14 13-22 * * 1-5'   # Mon-Fri 13:00-22:00 UTC
+  workflow_dispatch:                 # ← ADD THIS LINE
 
 jobs:
   ping:
