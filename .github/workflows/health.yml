@@ -1,0 +1,11 @@
+name: Wake Render
+
+on:
+  schedule:
+    - cron: '*/14 13-22 * * 1-5'   # Mon-Fri 13:00-22:00 UTC = 9am-6pm ET
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS https://stock-advisor-api.onrender.com/health || echo "API unreachable"

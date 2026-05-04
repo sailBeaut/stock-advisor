@@ -1,9 +1,10 @@
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
 
-DB_PATH = Path(__file__).parent / "trading.db"
+DB_PATH = Path(os.environ.get('DB_PATH', str(Path(__file__).parent / 'trading.db')))
 
 
 def get_connection(path: str | Path = DB_PATH) -> sqlite3.Connection:
@@ -57,6 +58,8 @@ def initialize(path: str | Path = DB_PATH) -> None:
         _create_recommendations(conn)
         _create_paper_portfolio(conn)
         _create_paper_nav(conn)
+        _create_user_holdings(conn)
+        _create_user_cash(conn)
 
 
 def _create_stocks(conn: sqlite3.Connection) -> None:
@@ -379,6 +382,28 @@ def _create_paper_nav(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_pnav_date
             ON paper_nav (date ASC);
+    """)
+
+
+def _create_user_holdings(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS user_holdings (
+            ticker      TEXT PRIMARY KEY,
+            shares      REAL NOT NULL,
+            avg_cost    REAL,
+            added_at    TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+    """)
+
+
+def _create_user_cash(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS user_cash (
+            id          INTEGER PRIMARY KEY CHECK(id = 1),
+            amount      REAL NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
     """)
 
 

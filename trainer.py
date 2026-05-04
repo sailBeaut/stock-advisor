@@ -21,6 +21,7 @@ Bias-prevention measures
 
 import datetime
 import logging
+import os
 from pathlib import Path
 
 import joblib
@@ -107,7 +108,7 @@ FEATURE_COLS: list[str] = [
 LABEL_SELL, LABEL_HOLD, LABEL_BUY = 0, 1, 2
 LABEL_NAMES = {LABEL_SELL: "SELL", LABEL_HOLD: "HOLD", LABEL_BUY: "BUY"}
 
-MODEL_DIR  = Path(__file__).parent / "models"
+MODEL_DIR  = Path(os.environ.get('MODEL_DIR', str(Path(__file__).parent / 'models')))
 MODEL_PATH = MODEL_DIR / "universal_model.joblib"
 
 
