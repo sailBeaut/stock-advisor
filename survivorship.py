@@ -259,6 +259,21 @@ def _get_removed_since(since_year: int = HISTORY_SINCE_YEAR) -> list[dict]:
 # Public API
 # ---------------------------------------------------------------------------
 
+def get_fetch_universe(conn) -> list[dict]:
+    """
+    Active tickers that should be fetched daily.
+
+    Reads is_active = 1 from the stocks table. Confirmed delistings (which
+    have been marked is_active = 0) are excluded from the daily fetch but
+    their historical rows stay in the database for survivorship-bias-correct
+    backtesting.
+    """
+    rows = conn.execute(
+        "SELECT ticker, name, sector, industry FROM stocks WHERE is_active = 1"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_historical_tickers() -> list[dict]:
     """
     Return the full historical S&P 500 universe:

@@ -18,7 +18,13 @@ import requests
 import yfinance as yf
 
 import database
-from survivorship import get_historical_tickers
+from survivorship import get_historical_tickers, get_fetch_universe
+
+try:
+    from curl_cffi import requests as _cf_requests
+    _YF_SESSION = _cf_requests.Session(impersonate="chrome")
+except ImportError:
+    _YF_SESSION = None
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -40,6 +46,8 @@ BATCH_SIZE = 50
 BATCH_DELAY = 3          # seconds between batches
 FULL_PERIOD = "5y"
 INCREMENTAL_DAYS = 5
+_BATCH_MAX_RETRIES = 2
+_BATCH_RETRY_SLEEP = 3   # seconds between retries
 
 
 # ---------------------------------------------------------------------------
@@ -167,47 +175,96 @@ def _download_price_batch(
     """
     Download OHLCV data for a batch of tickers in one yf.download() call.
 
+    Retries the full batch up to _BATCH_MAX_RETRIES times on exception or
+    empty result. Any ticker still absent after the batch succeeds falls back
+    to per-ticker Ticker.history(). Every ticker that fails after all attempts
+    is intentionally omitted from the return dict so _collect() can log it.
+
     Returns {ticker: DataFrame} with columns open/high/low/close/volume.
     """
-    joined = " ".join(tickers)
-    try:
-        raw = yf.download(
-            joined,
-            period=period,
-            start=start,
-            end=end,
-            auto_adjust=True,
-            progress=False,
-            threads=True,
-            group_by="ticker",
-        )
-    except Exception as exc:
-        log.error("yf.download batch failed: %s", exc)
-        return {}
-
-    if raw.empty:
-        return {}
-
+    _OHLCV = ["open", "high", "low", "close", "volume"]
     results: dict[str, pd.DataFrame] = {}
 
-    # Single ticker → flat columns; multiple tickers → MultiIndex columns
-    if len(tickers) == 1:
-        ticker = tickers[0]
-        df = raw.copy()
-        df.columns = [c.lower() for c in df.columns]
-        df = df[["open", "high", "low", "close", "volume"]].dropna(how="all")
-        if not df.empty:
-            results[ticker] = df
-    else:
-        for ticker in tickers:
-            try:
-                df = raw[ticker].copy()
-            except KeyError:
-                continue
+    def _parse_raw(raw: pd.DataFrame) -> dict[str, pd.DataFrame]:
+        out: dict[str, pd.DataFrame] = {}
+        # Single ticker → flat columns; multiple → MultiIndex (ticker, field)
+        if len(tickers) == 1:
+            ticker = tickers[0]
+            df = raw.copy()
             df.columns = [c.lower() for c in df.columns]
-            df = df[["open", "high", "low", "close", "volume"]].dropna(how="all")
+            avail = [c for c in _OHLCV if c in df.columns]
+            df = df[avail].dropna(how="all")
             if not df.empty:
-                results[ticker] = df
+                out[ticker] = df
+        else:
+            for ticker in tickers:
+                try:
+                    df = raw[ticker].copy()
+                except KeyError:
+                    continue
+                df.columns = [c.lower() for c in df.columns]
+                avail = [c for c in _OHLCV if c in df.columns]
+                df = df[avail].dropna(how="all")
+                if not df.empty:
+                    out[ticker] = df
+        return out
+
+    # --- Batch download with retry ---
+    joined = " ".join(tickers)
+    dl_kwargs: dict = dict(
+        auto_adjust=True,
+        progress=False,
+        threads=False,
+        group_by="ticker",
+    )
+    if period is not None:
+        dl_kwargs["period"] = period
+    if start is not None:
+        dl_kwargs["start"] = start
+    if end is not None:
+        dl_kwargs["end"] = end
+    if _YF_SESSION is not None:
+        dl_kwargs["session"] = _YF_SESSION
+
+    for attempt in range(1 + _BATCH_MAX_RETRIES):
+        if attempt > 0:
+            log.warning("Batch retry %d/%d…", attempt, _BATCH_MAX_RETRIES)
+            time.sleep(_BATCH_RETRY_SLEEP)
+        try:
+            raw = yf.download(joined, **dl_kwargs)
+        except Exception as exc:
+            log.warning("yf.download batch error (attempt %d): %s", attempt + 1, exc)
+            continue
+        if not raw.empty:
+            results = _parse_raw(raw)
+            break
+        log.warning("yf.download returned empty result (attempt %d).", attempt + 1)
+
+    # --- Per-ticker fallback for tickers absent from batch result ---
+    missing = [t for t in tickers if t not in results]
+    if missing:
+        log.debug(
+            "Per-ticker fallback for %d ticker(s) missing from batch: %s",
+            len(missing), missing,
+        )
+        for sym in missing:
+            try:
+                t_obj = (
+                    yf.Ticker(sym, session=_YF_SESSION)
+                    if _YF_SESSION is not None
+                    else yf.Ticker(sym)
+                )
+                h = t_obj.history(period=period) if period else t_obj.history(start=start, end=end)
+                if h.empty:
+                    continue
+                h.columns = [c.lower() for c in h.columns]
+                avail = [c for c in _OHLCV if c in h.columns]
+                df = h[avail].dropna(how="all")
+                if not df.empty:
+                    results[sym] = df
+                    log.debug("  %s: recovered via per-ticker fallback.", sym)
+            except Exception as exc:
+                log.debug("  %s: per-ticker fallback also failed: %s", sym, exc)
 
     return results
 
@@ -422,14 +479,12 @@ def run_incremental_update() -> None:
     # Go back extra calendar days to guarantee 5 trading days
     start_date = end_date - timedelta(days=INCREMENTAL_DAYS + 4)
 
-    # Use whatever is already active in the database; fall back to Wikipedia
+    # get_fetch_universe() returns only is_active=1 tickers, excluding confirmed
+    # delistings, while keeping their historical rows intact in the DB.
     with database.connection() as conn:
-        rows = conn.execute(
-            "SELECT ticker, name, sector, industry FROM stocks WHERE is_active = 1"
-        ).fetchall()
+        tickers_meta = get_fetch_universe(conn)
 
-    if rows:
-        tickers_meta = [dict(r) for r in rows]
+    if tickers_meta:
         log.info(
             "Updating %d active tickers from database.", len(tickers_meta)
         )
