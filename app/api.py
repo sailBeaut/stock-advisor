@@ -62,6 +62,16 @@ def _check_api_key(x_api_key: Optional[str] = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "stock-advisor-api"}
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "healthy"}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "version": "0.1.0"}

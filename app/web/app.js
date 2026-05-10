@@ -1,7 +1,10 @@
 // ============================================================
 // Configuration
 // ============================================================
-const API_BASE = 'https://stock-advisor-api.onrender.com';
+const API_BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
+  ? 'http://127.0.0.1:8000'
+  : 'https://stock-advisor-api.onrender.com';
+console.log('[app] API_BASE =', API_BASE);
 
 function getApiKey() { return localStorage.getItem('app_api_key') || ''; }
 
