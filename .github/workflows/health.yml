@@ -9,4 +9,4 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS https://stock-advisor-api.onrender.com/health || echo "API unreachable"
+      - run: curl -fsS https://stock-advisor-api-n5xr.onrender.com/health || echo "API unreachable"
