@@ -1,15 +1,16 @@
-const CACHE_NAME = 'stock-advisor-v2';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/styles.css',
-  '/manifest.webmanifest',
-  '/icon-192.png',
-  '/icon-512.png',
-];
+const CACHE_NAME = 'stock-advisor-v3';
 
 self.addEventListener('install', (event) => {
+  const base = self.registration.scope;
+  const STATIC_ASSETS = [
+    base,
+    base + 'index.html',
+    base + 'app.js',
+    base + 'styles.css',
+    base + 'manifest.webmanifest',
+    base + 'icon-192.png',
+    base + 'icon-512.png',
+  ];
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
