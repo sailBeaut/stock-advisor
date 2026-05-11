@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 import advisor
 import database
+from db_path import ensure_db_present, is_cloud_environment, CLOUD_DB_PATH
+from r2_client import is_remote_newer, download_db
 
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'local')
 
@@ -30,6 +32,31 @@ def get_model():
 
 
 app = FastAPI(title="Stock Advisor", version="0.1.0")
+
+
+@app.on_event("startup")
+async def startup_download_db():
+    """On cold start, ensure DB is present (downloads from R2 in cloud)."""
+    path = ensure_db_present()
+    print(f"[startup] DB ready at {path}")
+
+
+from fastapi import Request
+
+
+@app.middleware("http")
+async def refresh_db_if_stale(request: Request, call_next):
+    """Before each request in cloud env, check if R2 has a newer DB."""
+    if is_cloud_environment():
+        try:
+            if is_remote_newer(CLOUD_DB_PATH):
+                print("[middleware] R2 has newer DB, refreshing")
+                download_db(CLOUD_DB_PATH)
+        except Exception as e:
+            print(f"[middleware] R2 freshness check failed: {e}")
+    response = await call_next(request)
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,

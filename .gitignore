@@ -2,9 +2,16 @@
 .env
 
 # Database
+trading.db
+trading.db-shm
+trading.db-wal
 *.db
-*.db-wal
 *.db-shm
+*.db-wal
+
+# Local cache for downloaded R2 DB
+/tmp/trading.db
+.r2_cache/
 
 # Trained models
 models/

@@ -1,10 +1,9 @@
 name: Daily Pipeline
 
 on:
-  # Runs every weekday (Mon–Fri) at 22:30 UTC = ~5:30pm ET = market close + 30 min
   schedule:
+    # Weekdays at 22:30 UTC (after US market close)
     - cron: '30 22 * * 1-5'
-  # Allows manual trigger from the GitHub UI for testing
   workflow_dispatch:
 
 env:
@@ -13,15 +12,23 @@ env:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write   # needed to commit the updated DB back
+    timeout-minutes: 45
+
+    env:
+      USE_R2_DB: "true"
+      ENDPOINTS_FOR_S3_CLIENTS: ${{ secrets.ENDPOINTS_FOR_S3_CLIENTS }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+      NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
-        with:
-          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -34,18 +41,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run daily pipeline
-        env:
-          FRED_API_KEY:    ${{ secrets.FRED_API_KEY }}
-          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-          NEWSAPI_KEY:     ${{ secrets.NEWSAPI_KEY }}
-        run: |
-          python daily_pipeline.py
+      - name: Run daily pipeline (downloads DB from R2, runs ML, uploads DB to R2)
+        run: python daily_pipeline.py
 
-      - name: Commit updated database & signals
+      - name: Confirm R2 upload happened
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add trading.db trading.db-wal trading.db-shm 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "Daily pipeline run $(date -u +%Y-%m-%d)"
-          git push
+          python -c "
+          from r2_client import get_remote_lastmod
+          from datetime import datetime, timezone, timedelta
+          ts = get_remote_lastmod()
+          assert ts is not None, 'R2 lastmod marker missing after pipeline'
+          age = datetime.now(timezone.utc) - datetime.fromisoformat(ts)
+          assert age < timedelta(minutes=5), f'R2 marker too old: {age}'
+          print('R2 confirmed fresh, age:', age)
+          "

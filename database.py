@@ -3,8 +3,9 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+from db_path import get_db_path
 
-DB_PATH = Path(os.environ.get('DB_PATH', str(Path(__file__).parent / 'trading.db')))
+DB_PATH = Path(os.environ.get('DB_PATH') or get_db_path())
 
 
 def get_connection(path: str | Path = DB_PATH) -> sqlite3.Connection:

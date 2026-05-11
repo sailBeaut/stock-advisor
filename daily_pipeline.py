@@ -14,10 +14,14 @@ Usage
 """
 
 import argparse
+import os
 import sys
 import time
 import traceback
 from datetime import datetime
+
+from db_path import is_cloud_environment, get_db_path
+from r2_client import download_db, upload_db
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +68,13 @@ def _run_step(name: str, fn) -> _StepResult:
 def run_pipeline(skip_fetch: bool = False, retrain: bool = False) -> None:
     pipeline_start = time.perf_counter()
     results: list[_StepResult] = []
+
+    db_path = get_db_path()
+
+    # Pre-flight: in cloud, pull latest DB from R2 before running pipeline
+    if is_cloud_environment() or os.environ.get("FORCE_R2_SYNC"):
+        print(f"[daily_pipeline] cloud mode, downloading DB from R2 to {db_path}")
+        download_db(db_path)
 
     print("\n" + "=" * 68)
     print(f"  DAILY PIPELINE  —  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -186,6 +197,12 @@ def run_pipeline(skip_fetch: bool = False, retrain: bool = False) -> None:
     else:
         print(f"  Status      : {n_fail} STEP(S) FAILED — review errors above")
     print("=" * 68 + "\n")
+
+    # Post-flight: in cloud, push updated DB back to R2
+    if is_cloud_environment() or os.environ.get("FORCE_R2_SYNC"):
+        print(f"[daily_pipeline] cloud mode, uploading DB to R2")
+        upload_db(db_path)
+        print("[daily_pipeline] R2 upload complete")
 
 
 # ---------------------------------------------------------------------------
